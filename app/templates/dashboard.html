@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — ChurnGuard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard</h1>
+    <p class="page-subtitle">Customer churn analytics overview</p>
+</div>
+
+<!-- KPI Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-icon--blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ "{:,}".format(stats.total_customers) }}</span>
+            <span class="kpi-label">Total Customers</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-icon--red">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ stats.churn_rate }}%</span>
+            <span class="kpi-label">Churn Rate</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-icon--green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">${{ stats.avg_monthly_charges }}</span>
+            <span class="kpi-label">Avg Monthly Charges</span>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon kpi-icon--purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+        </div>
+        <div class="kpi-content">
+            <span class="kpi-value">{{ stats.avg_tenure }} mo</span>
+            <span class="kpi-label">Avg Tenure</span>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 1 -->
+<div class="chart-grid">
+    <div class="chart-card">
+        <h3 class="chart-title">Churn Rate by Contract Type</h3>
+        <div class="chart-container">
+            <canvas id="chartContract"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3 class="chart-title">Churn Distribution</h3>
+        <div class="chart-container chart-container--small">
+            <canvas id="chartDistribution"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row 2 -->
+<div class="chart-grid">
+    <div class="chart-card">
+        <h3 class="chart-title">Churn Rate by Internet Service</h3>
+        <div class="chart-container">
+            <canvas id="chartInternet"></canvas>
+        </div>
+    </div>
+    <div class="chart-card">
+        <h3 class="chart-title">Churn Rate by Tenure Group</h3>
+        <div class="chart-container">
+            <canvas id="chartTenure"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Importance -->
+<div class="chart-card">
+    <h3 class="chart-title">Top Churn Risk Factors</h3>
+    <p class="chart-subtitle">Features most influential in predicting customer churn</p>
+    <div class="importance-list">
+        {% for feat in feature_importance %}
+        <div class="importance-item">
+            <div class="importance-header">
+                <span class="importance-name">{{ feat.display_name }}</span>
+                <span class="importance-value">{{ feat.importance }}%</span>
+            </div>
+            <div class="importance-bar-bg">
+                <div class="importance-bar" style="width: {{ (feat.importance / feature_importance[0].importance * 100) }}%"></div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        loadDashboardCharts();
+    });
+</script>
+{% endblock %}

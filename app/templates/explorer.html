@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Data Explorer — ChurnGuard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="page-header-row">
+        <div>
+            <h1>Data Explorer</h1>
+            <p class="page-subtitle">Browse and filter the customer churn dataset</p>
+        </div>
+        <a href="{{ url_for('main.export_data', **filters) }}" class="btn btn--secondary" id="exportBtn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-bar">
+    <form method="GET" action="{{ url_for('main.explorer') }}" class="filter-form" id="filterForm">
+        {% for col, options in filter_options.items() %}
+        <div class="filter-group">
+            <label for="filter_{{ col }}">{{ col }}</label>
+            <select id="filter_{{ col }}" name="{{ col }}" onchange="document.getElementById('filterForm').submit()">
+                <option value="">All</option>
+                {% for opt in options %}
+                <option value="{{ opt }}" {% if filters.get(col) == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endfor %}
+        {% if filters %}
+        <a href="{{ url_for('main.explorer') }}" class="btn btn--ghost btn--small">Clear Filters</a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Results Info -->
+<div class="results-info">
+    <span>Showing {{ data.records | length }} of {{ "{:,}".format(data.total_records) }} records</span>
+    <span>Page {{ data.current_page }} of {{ data.total_pages }}</span>
+</div>
+
+<!-- Data Table -->
+<div class="table-wrapper">
+    <table class="data-table" id="dataTable">
+        <thead>
+            <tr>
+                {% set columns = ['customerID', 'gender', 'SeniorCitizen', 'Partner', 'tenure', 'Contract', 'MonthlyCharges', 'TotalCharges', 'InternetService', 'Churn'] %}
+                {% for col in columns %}
+                {% if data.records | length > 0 and col in data.records[0] %}
+                <th>
+                    <a href="{{ url_for('main.explorer', sort_by=col, sort_order=('desc' if sort_by == col and sort_order == 'asc' else 'asc'), **filters) }}" class="sort-link {% if sort_by == col %}active{% endif %}">
+                        {{ col }}
+                        {% if sort_by == col %}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            {% if sort_order == 'asc' %}
+                            <polyline points="18 15 12 9 6 15"/>
+                            {% else %}
+                            <polyline points="6 9 12 15 18 9"/>
+                            {% endif %}
+                        </svg>
+                        {% endif %}
+                    </a>
+                </th>
+                {% endif %}
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% if data.records | length == 0 %}
+            <tr>
+                <td colspan="10" class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <p>No records match your filters</p>
+                    <a href="{{ url_for('main.explorer') }}" class="btn btn--ghost btn--small">Clear Filters</a>
+                </td>
+            </tr>
+            {% else %}
+            {% for record in data.records %}
+            <tr>
+                {% for col in columns %}
+                {% if col in record %}
+                <td>
+                    {% if col == 'Churn' %}
+                    <span class="status-badge status-badge--{{ 'churn' if record[col] == 'Yes' else 'retain' }}">
+                        {{ record[col] }}
+                    </span>
+                    {% elif col == 'MonthlyCharges' or col == 'TotalCharges' %}
+                    ${{ "%.2f" | format(record[col]) }}
+                    {% else %}
+                    {{ record[col] }}
+                    {% endif %}
+                </td>
+                {% endif %}
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Pagination -->
+{% if data.total_pages > 1 %}
+<div class="pagination">
+    {% if data.current_page > 1 %}
+    <a href="{{ url_for('main.explorer', page=data.current_page - 1, sort_by=sort_by, sort_order=sort_order, **filters) }}" class="pagination-btn">&laquo; Previous</a>
+    {% else %}
+    <span class="pagination-btn pagination-btn--disabled">&laquo; Previous</span>
+    {% endif %}
+
+    {% set start_page = [1, data.current_page - 2] | max %}
+    {% set end_page = [data.total_pages, data.current_page + 2] | min %}
+
+    {% if start_page > 1 %}
+    <a href="{{ url_for('main.explorer', page=1, sort_by=sort_by, sort_order=sort_order, **filters) }}" class="pagination-btn">1</a>
+    {% if start_page > 2 %}<span class="pagination-ellipsis">…</span>{% endif %}
+    {% endif %}
+
+    {% for p in range(start_page, end_page + 1) %}
+    <a href="{{ url_for('main.explorer', page=p, sort_by=sort_by, sort_order=sort_order, **filters) }}"
+       class="pagination-btn {% if p == data.current_page %}pagination-btn--active{% endif %}">{{ p }}</a>
+    {% endfor %}
+
+    {% if end_page < data.total_pages %}
+    {% if end_page < data.total_pages - 1 %}<span class="pagination-ellipsis">…</span>{% endif %}
+    <a href="{{ url_for('main.explorer', page=data.total_pages, sort_by=sort_by, sort_order=sort_order, **filters) }}" class="pagination-btn">{{ data.total_pages }}</a>
+    {% endif %}
+
+    {% if data.current_page < data.total_pages %}
+    <a href="{{ url_for('main.explorer', page=data.current_page + 1, sort_by=sort_by, sort_order=sort_order, **filters) }}" class="pagination-btn">Next &raquo;</a>
+    {% else %}
+    <span class="pagination-btn pagination-btn--disabled">Next &raquo;</span>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
