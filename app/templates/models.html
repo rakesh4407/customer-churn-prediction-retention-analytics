@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block title %}Model Comparison — ChurnGuard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Model Comparison</h1>
+        <p class="page-subtitle">
+            Side-by-side evaluation of Logistic Regression, Decision Tree, and Random Forest
+            on the IBM Telco Churn dataset (test set: 1,409 customers, 20/80 stratified split).
+        </p>
+    </div>
+</div>
+
+{% if not comparison %}
+<div class="alert-card alert-warning">
+    <strong>model_metrics.json not found.</strong>
+    Run <code>python model/train_model.py</code> to generate it, then reload this page.
+</div>
+{% else %}
+
+{# ── Why recall matters ─────────────────────────────────────────────── #}
+<div class="info-banner">
+    <div class="info-banner-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+        </svg>
+    </div>
+    <div class="info-banner-body">
+        <strong>Why recall matters more than accuracy for churn.</strong>
+        Missing a churner (false negative) means losing that customer's lifetime value — a costly miss.
+        Flagging a loyal customer as at-risk (false positive) only costs a cheap retention offer.
+        With a <strong>~27% churn rate</strong>, a naïve model predicting "No churn" always would reach
+        73% accuracy but catch zero churners. Recall and F1 are the metrics that actually count here.
+    </div>
+</div>
+
+{# ── Metrics table ───────────────────────────────────────────────────── #}
+{% set models = comparison.models %}
+{% set best   = comparison.best %}
+{% set model_names = ["Logistic Regression", "Decision Tree", "Random Forest"] %}
+
+<div class="card mc-card">
+    <div class="card-header">
+        <h2 class="card-title">Performance Metrics</h2>
+        <span class="badge-winner">Gold = best in class</span>
+    </div>
+    <div class="table-scroll">
+        <table class="mc-table" id="metrics-table">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    {% for name in model_names %}
+                    <th>
+                        <div class="model-header model-header-{{ loop.index }}">
+                            <span class="model-dot model-dot-{{ loop.index }}"></span>
+                            {{ name }}
+                        </div>
+                    </th>
+                    {% endfor %}
+                    <th>Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set rows = [
+                    ("Accuracy",  "accuracy",  "Overall correct predictions. Misleading with class imbalance."),
+                    ("Precision", "precision", "Of customers flagged as churn, how many actually churned?"),
+                    ("Recall",    "recall",    "Of actual churners, how many did we catch? ← Key metric."),
+                    ("F1 Score",  "f1",        "Harmonic mean of Precision and Recall. Best overall single metric."),
+                    ("ROC-AUC",   "roc_auc",   "Ranking quality across all thresholds. Higher = better separator.")
+                ] %}
+                {% for label, key, note in rows %}
+                <tr>
+                    <td class="metric-label">
+                        {{ label }}
+                        {% if key == "recall" %}<span class="key-tag">KEY</span>{% endif %}
+                    </td>
+                    {% for name in model_names %}
+                    {% set val = models[name][key] %}
+                    <td class="metric-val {% if best[key] == name %}best-cell{% endif %}">
+                        {{ val }}%
+                        {% if best[key] == name %}
+                        <svg class="best-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="metric-note">{{ note }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# ── Bar chart ───────────────────────────────────────────────────────── #}
+<div class="card mc-card">
+    <div class="card-header">
+        <h2 class="card-title">Visual Comparison</h2>
+        <p class="card-subtitle">All five metrics across all three models (%)</p>
+    </div>
+    <div class="chart-container-lg">
+        <canvas id="modelComparisonChart"></canvas>
+    </div>
+</div>
+
+{# ── Confusion matrices ──────────────────────────────────────────────── #}
+<div class="card mc-card">
+    <div class="card-header">
+        <h2 class="card-title">Confusion Matrices</h2>
+        <p class="card-subtitle">Test set: 374 churners / 1,035 retained (n=1,409)</p>
+    </div>
+    <div class="cm-grid">
+        {% for name in model_names %}
+        {% set cm = models[name].confusion_matrix %}
+        <div class="cm-card cm-card-{{ loop.index }}">
+            <h3 class="cm-model-name">{{ name }}</h3>
+            <div class="cm-matrix">
+                <div class="cm-cell cm-tn">
+                    <span class="cm-val">{{ cm.tn }}</span>
+                    <span class="cm-label">True Negative<br><small>Correctly retained</small></span>
+                </div>
+                <div class="cm-cell cm-fp">
+                    <span class="cm-val">{{ cm.fp }}</span>
+                    <span class="cm-label">False Positive<br><small>False alarms</small></span>
+                </div>
+                <div class="cm-cell cm-fn">
+                    <span class="cm-val">{{ cm.fn }}</span>
+                    <span class="cm-label">False Negative<br><small>Missed churners</small></span>
+                </div>
+                <div class="cm-cell cm-tp">
+                    <span class="cm-val">{{ cm.tp }}</span>
+                    <span class="cm-label">True Positive<br><small>Caught churners</small></span>
+                </div>
+            </div>
+            <div class="cm-stats">
+                <div class="cm-stat">
+                    <span class="cm-stat-val">{{ models[name].recall }}%</span>
+                    <span class="cm-stat-label">Recall</span>
+                </div>
+                <div class="cm-stat">
+                    <span class="cm-stat-val">{{ models[name].precision }}%</span>
+                    <span class="cm-stat-label">Precision</span>
+                </div>
+                <div class="cm-stat">
+                    <span class="cm-stat-val">{{ models[name].f1 }}%</span>
+                    <span class="cm-stat-label">F1 Score</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{# ── Model rationale ─────────────────────────────────────────────────── #}
+<div class="card mc-card">
+    <div class="card-header">
+        <h2 class="card-title">Model Selection Rationale</h2>
+    </div>
+    <div class="rationale-grid">
+        {% set rationale = [
+            ("1", "Logistic Regression", "Highest recall (78.1%) — catches the most churners. Best choice when the priority is not missing at-risk customers, and a slight increase in false alarms is acceptable. Interpretable coefficients map directly to business drivers."),
+            ("2", "Decision Tree", "Comparable recall to LR (75.7%) with lower ROC-AUC. Fully interpretable via tree paths — useful for explaining individual decisions to stakeholders. Prone to overfitting without careful depth tuning."),
+            ("3", "Random Forest (Production)", "Highest accuracy (79.8%), precision (65.5%), and ROC-AUC (83.8%). Lowest false-positive rate — best when retention budget is limited and targeting efficiency matters. Ensemble robustness makes it the best all-round model for production scoring.")
+        ] %}
+        {% for rank, name, desc in rationale %}
+        <div class="rationale-card rationale-{{ rank }}">
+            <div class="rationale-rank">{{ rank }}</div>
+            <div class="rationale-body">
+                <h4>{{ name }}</h4>
+                <p>{{ desc }}</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if comparison %}
+<script>
+(function () {
+    const metrics = {{ comparison.models | tojson }};
+    const modelNames = ["Logistic Regression", "Decision Tree", "Random Forest"];
+    const metricKeys  = ["accuracy", "precision", "recall", "f1", "roc_auc"];
+    const metricLabels = ["Accuracy", "Precision", "Recall", "F1 Score", "ROC-AUC"];
+
+    const colors = [
+        { bg: "rgba(99, 102, 241, 0.85)",  border: "rgba(99, 102, 241, 1)" },
+        { bg: "rgba(20, 184, 166, 0.85)",  border: "rgba(20, 184, 166, 1)" },
+        { bg: "rgba(245, 158, 11, 0.85)", border: "rgba(245, 158, 11, 1)" },
+    ];
+
+    const datasets = modelNames.map((name, i) => ({
+        label: name,
+        data: metricKeys.map(k => metrics[name][k]),
+        backgroundColor: colors[i].bg,
+        borderColor: colors[i].border,
+        borderWidth: 2,
+        borderRadius: 6,
+        borderSkipped: false,
+    }));
+
+    const ctx = document.getElementById("modelComparisonChart").getContext("2d");
+    new Chart(ctx, {
+        type: "bar",
+        data: { labels: metricLabels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: "#cbd5e1", font: { family: "Inter", size: 13 }, padding: 20 },
+                },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y}%`,
+                    },
+                    backgroundColor: "rgba(15,23,42,0.95)",
+                    titleColor: "#f1f5f9",
+                    bodyColor: "#94a3b8",
+                    borderColor: "rgba(99,102,241,0.3)",
+                    borderWidth: 1,
+                },
+            },
+            scales: {
+                x: {
+                    ticks: { color: "#94a3b8", font: { family: "Inter", size: 12 } },
+                    grid:  { color: "rgba(148,163,184,0.08)" },
+                },
+                y: {
+                    min: 40,
+                    max: 100,
+                    ticks: {
+                        color: "#94a3b8",
+                        font: { family: "Inter", size: 12 },
+                        callback: v => v + "%",
+                    },
+                    grid: { color: "rgba(148,163,184,0.08)" },
+                },
+            },
+        },
+    });
+})();
+</script>
+{% endif %}
+{% endblock %}

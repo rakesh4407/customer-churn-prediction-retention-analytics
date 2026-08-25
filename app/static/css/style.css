@@ -992,3 +992,298 @@ a {
         align-items: flex-start;
     }
 }
+
+/* ============================================
+   Model Comparison Page
+   ============================================ */
+
+.mc-card {
+    margin-bottom: 1.5rem;
+}
+
+/* Info banner */
+.info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: linear-gradient(135deg, rgba(14,165,233,0.08), rgba(139,92,246,0.06));
+    border: 1px solid rgba(14,165,233,0.25);
+    border-left: 4px solid var(--color-primary);
+    border-radius: var(--radius);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    color: var(--color-text);
+    font-size: 0.88rem;
+    line-height: 1.6;
+}
+
+.info-banner-icon {
+    flex-shrink: 0;
+    color: var(--color-primary);
+    margin-top: 1px;
+}
+
+.info-banner-body strong {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--color-text);
+    font-size: 0.92rem;
+}
+
+/* Winner badge */
+.badge-winner {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    background: var(--color-warning-light);
+    border: 1px solid rgba(245,158,11,0.3);
+    border-radius: 99px;
+    padding: 2px 10px;
+    font-weight: 500;
+}
+
+/* Metrics table */
+.table-scroll {
+    overflow-x: auto;
+}
+
+.mc-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.mc-table th,
+.mc-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.mc-table thead th {
+    background: rgba(248,250,252,0.8);
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.model-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.model-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.model-dot-1 { background: #6366f1; }
+.model-dot-2 { background: #14b8a6; }
+.model-dot-3 { background: #f59e0b; }
+
+.metric-label {
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+}
+
+.key-tag {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    background: var(--color-danger);
+    color: #fff;
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.metric-val {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+}
+
+.best-cell {
+    background: rgba(245,158,11,0.06);
+    color: #92400e;
+    font-weight: 700;
+}
+
+.best-icon {
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 4px;
+    color: var(--color-warning);
+}
+
+.metric-note {
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    max-width: 240px;
+}
+
+/* Chart */
+.chart-container-lg {
+    position: relative;
+    height: 340px;
+    padding: 0 0.5rem 0.5rem;
+}
+
+/* Confusion matrices */
+.cm-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+}
+
+.cm-card {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    transition: box-shadow var(--transition);
+}
+.cm-card:hover { box-shadow: var(--shadow-md); }
+.cm-card-1 { border-top: 3px solid #6366f1; }
+.cm-card-2 { border-top: 3px solid #14b8a6; }
+.cm-card-3 { border-top: 3px solid #f59e0b; }
+
+.cm-model-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.cm-matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 1rem;
+}
+
+.cm-cell {
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 0.5rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.cm-tn { background: rgba(16,185,129,0.10); border: 1px solid rgba(16,185,129,0.25); }
+.cm-tp { background: rgba(16,185,129,0.18); border: 1px solid rgba(16,185,129,0.4); }
+.cm-fp { background: rgba(245,158,11,0.10); border: 1px solid rgba(245,158,11,0.25); }
+.cm-fn { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.3); }
+
+.cm-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+}
+.cm-label {
+    font-size: 0.68rem;
+    color: var(--color-text-secondary);
+    line-height: 1.3;
+}
+.cm-label small { color: var(--color-text-muted); }
+
+.cm-stats {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid var(--color-border);
+    padding-top: 0.75rem;
+}
+.cm-stat { text-align: center; }
+.cm-stat-val {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+}
+.cm-stat-label {
+    display: block;
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    margin-top: 1px;
+}
+
+/* Rationale */
+.rationale-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.rationale-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--color-border);
+    background: var(--color-bg);
+}
+
+.rationale-rank {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    color: #fff;
+}
+.rationale-1 .rationale-rank { background: #6366f1; }
+.rationale-2 .rationale-rank { background: #14b8a6; }
+.rationale-3 .rationale-rank { background: #f59e0b; }
+
+.rationale-body h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.25rem;
+}
+.rationale-body p {
+    font-size: 0.83rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* Warning alert card */
+.alert-card {
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+}
+.alert-warning {
+    background: var(--color-warning-light);
+    border: 1px solid rgba(245,158,11,0.4);
+    color: #92400e;
+}
+
+/* MC responsive */
+@media (max-width: 900px) {
+    .cm-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+    .metric-note { display: none; }
+    .mc-table th:last-child,
+    .mc-table td:last-child { display: none; }
+}

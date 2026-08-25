@@ -1,8 +1,11 @@
 """
 ML Model service for ChurnGuard.
-Handles model loading, feature engineering, prediction, and feature importance.
+Handles model loading, feature engineering, prediction, feature importance,
+and multi-model comparison metrics.
 """
 
+import json
+import os
 import pickle
 import pandas as pd
 import numpy as np
@@ -161,3 +164,27 @@ class ChurnModel:
                 "importance": round(imp * 100, 2),
             })
         return results
+
+    def get_model_comparison(self):
+        """
+        Load and return model comparison metrics from model_metrics.json.
+        Returns a dict with model names as keys and metric dicts as values,
+        plus a 'best' sub-dict highlighting the winner per metric.
+        """
+        metrics_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "model", "model_metrics.json"
+        )
+        if not os.path.exists(metrics_path):
+            return None
+
+        with open(metrics_path, "r") as f:
+            data = json.load(f)
+
+        metric_keys = ["accuracy", "precision", "recall", "f1", "roc_auc"]
+        best = {}
+        for metric in metric_keys:
+            best[metric] = max(data, key=lambda m: data[m][metric])
+
+        return {"models": data, "best": best}
+

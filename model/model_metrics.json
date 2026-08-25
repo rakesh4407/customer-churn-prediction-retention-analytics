@@ -1,0 +1,41 @@
+{
+  "Logistic Regression": {
+    "accuracy": 73.31,
+    "precision": 49.83,
+    "recall": 78.07,
+    "f1": 60.83,
+    "roc_auc": 83.58,
+    "confusion_matrix": {
+      "tn": 741,
+      "fp": 294,
+      "fn": 82,
+      "tp": 292
+    }
+  },
+  "Decision Tree": {
+    "accuracy": 72.68,
+    "precision": 49.05,
+    "recall": 75.67,
+    "f1": 59.52,
+    "roc_auc": 80.33,
+    "confusion_matrix": {
+      "tn": 741,
+      "fp": 294,
+      "fn": 91,
+      "tp": 283
+    }
+  },
+  "Random Forest": {
+    "accuracy": 79.84,
+    "precision": 65.52,
+    "recall": 50.8,
+    "f1": 57.23,
+    "roc_auc": 83.78,
+    "confusion_matrix": {
+      "tn": 935,
+      "fp": 100,
+      "fn": 184,
+      "tp": 190
+    }
+  }
+}

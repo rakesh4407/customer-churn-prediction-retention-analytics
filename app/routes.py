@@ -129,3 +129,20 @@ def export_data():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment; filename=churn_data_export.csv"},
     )
+
+
+@main_bp.route("/models")
+def models():
+    """Model comparison page — metrics for LR, DT, and Random Forest."""
+    comparison = application.churn_model.get_model_comparison()
+    return render_template("models.html", comparison=comparison)
+
+
+@main_bp.route("/api/model-metrics")
+def model_metrics():
+    """Return model comparison metrics as JSON for Chart.js."""
+    comparison = application.churn_model.get_model_comparison()
+    if not comparison:
+        return jsonify({"error": "model_metrics.json not found — run train_model.py first"}), 404
+    return jsonify(comparison)
+
