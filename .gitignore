@@ -26,3 +26,6 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Power BI — auto-generated data exports (run powerbi/prepare_data.py to regenerate)
+powerbi/data/
