@@ -75,8 +75,58 @@
             <div class="confidence-bar confidence-bar--retain" style="width: {{ result.retain_probability }}%"></div>
         </div>
     </div>
+
+    <!-- SHAP Explanation Panel -->
+    {% if result.shap_explanation %}
+    <div class="shap-panel">
+        <div class="shap-panel-header">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+            </svg>
+            <span>Why this score? — Key risk factors (SHAP analysis)</span>
+        </div>
+        <div class="shap-factors">
+            {% set up_factors = result.shap_explanation | selectattr("direction", "eq", "up") | list %}
+            {% set down_factors = result.shap_explanation | selectattr("direction", "eq", "down") | list %}
+
+            {% if up_factors %}
+            <div class="shap-group">
+                <p class="shap-group-label shap-group-label--up">Pushing toward Churn</p>
+                {% for f in up_factors %}
+                <div class="shap-factor shap-factor--up">
+                    <span class="shap-arrow">&#8593;</span>
+                    <span class="shap-feature-label">{{ f.label }}</span>
+                    <div class="shap-bar-wrap">
+                        <div class="shap-bar shap-bar--up" style="width: {{ [f.shap_value * 800, 100] | min }}%"></div>
+                    </div>
+                    <span class="shap-val">+{{ f.shap_value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if down_factors %}
+            <div class="shap-group">
+                <p class="shap-group-label shap-group-label--down">Pushing toward Retention</p>
+                {% for f in down_factors %}
+                <div class="shap-factor shap-factor--down">
+                    <span class="shap-arrow">&#8595;</span>
+                    <span class="shap-feature-label">{{ f.label }}</span>
+                    <div class="shap-bar-wrap">
+                        <div class="shap-bar shap-bar--down" style="width: {{ [f.shap_value * 800, 100] | min }}%"></div>
+                    </div>
+                    <span class="shap-val">-{{ f.shap_value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <p class="shap-note">SHAP values show each feature's contribution to the churn probability. Positive = pushes toward churn; negative = pushes toward retention.</p>
+    </div>
+    {% endif %}
 </div>
 {% endif %}
+
 
 <!-- Prediction Form -->
 <form method="POST" action="{{ url_for('main.predict') }}" class="predict-form" id="predictForm">

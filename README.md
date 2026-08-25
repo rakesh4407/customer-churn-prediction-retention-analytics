@@ -9,10 +9,12 @@ A web-based analytics platform for predicting and analyzing customer churn in th
 ## Key Features
 
 - **Analytics Dashboard** — KPI cards and interactive charts visualizing churn patterns by contract type, internet service, tenure, and payment method
-- **Churn Prediction** — Form-based prediction tool using a Random Forest Classifier with real-time confidence scoring and risk assessment
+- **Churn Prediction** — Form-based prediction tool using a Random Forest Classifier with real-time confidence scoring, risk assessment, and **SHAP-powered individual explanations**
 - **Model Comparison** — Live side-by-side evaluation of Logistic Regression, Decision Tree, and Random Forest with metrics table, grouped bar chart, confusion matrices, and selection rationale
 - **Data Explorer** — Browse, filter, sort, and paginate through 7,000+ customer records with CSV export
 - **Feature Importance** — Visual breakdown of the top factors driving customer churn
+- **SHAP Explanations** — Per-prediction explanation showing which features pushed toward churn and which toward retention, with directional bar chart
+- **SQL Analysis Layer** — 5 SQL scripts (25+ queries) covering customer segmentation, churn rate analysis, revenue impact, retention targeting, and advanced window functions
 - **Input Validation** — Server-side validation with meaningful error messages for all prediction inputs
 - **Responsive Design** — Mobile-friendly layout with collapsible sidebar navigation
 - **Modular Architecture** — Clean separation of ML model, data service, routes, and templates
@@ -25,8 +27,10 @@ A web-based analytics platform for predicting and analyzing customer churn in th
 | --------------- | -------------------------------------------------------------------------- |
 | Backend         | Python, Flask                                                              |
 | ML Models       | scikit-learn (Logistic Regression, Decision Tree, Random Forest)           |
+| Explainability  | SHAP (SHapley Additive exPlanations) — per-prediction factor analysis      |
 | Data Processing | pandas, NumPy                                                              |
 | Statistics      | scipy                                                                      |
+| SQL Analysis    | SQLite / standard SQL (5 scripts, 25+ business queries)                    |
 | Frontend        | HTML5, CSS3 (custom design system), JavaScript                             |
 | Charts          | Chart.js                                                                   |
 | Configuration   | python-dotenv                                                              |
@@ -41,7 +45,7 @@ ChurnGuard/
 │   ├── __init__.py          # Flask app factory
 │   ├── config.py            # Environment-based configuration
 │   ├── routes.py            # Route handlers & API endpoints
-│   ├── ml_model.py          # ML model wrapper with validation & comparison
+│   ├── ml_model.py          # ML model wrapper — prediction, SHAP & comparison
 │   ├── data_service.py      # Dataset analytics & filtering
 │   ├── static/
 │   │   ├── css/style.css    # Custom CSS design system
@@ -49,17 +53,25 @@ ChurnGuard/
 │   └── templates/
 │       ├── base.html        # Base layout with navigation
 │       ├── dashboard.html   # Analytics dashboard
-│       ├── predict.html     # Churn prediction form
+│       ├── predict.html     # Churn prediction form + SHAP explanation panel
 │       ├── models.html      # Model comparison page
 │       └── explorer.html    # Data explorer with filters
 ├── data/
 │   └── telco_churn.csv      # IBM Telco Customer Churn dataset
 ├── model/
-│   ├── train_model.py       # Trains LR, DT & RF — outputs .pkl + metrics JSON
+│   ├── train_model.py       # Trains LR, DT & RF — outputs pkl, metrics JSON & SHAP
 │   ├── churn_model.pkl      # Trained Random Forest (production model)
-│   └── model_metrics.json   # Evaluation metrics for all three models
+│   ├── model_metrics.json   # Evaluation metrics for all three models
+│   └── shap_explainer.pkl   # SHAP TreeExplainer for live prediction explanations
+├── sql/
+│   ├── 01_customer_analysis.sql   # Demographics & segmentation
+│   ├── 02_churn_analysis.sql      # Churn rate by all dimensions
+│   ├── 03_revenue_analysis.sql    # Revenue impact & ARPU
+│   ├── 04_retention_analysis.sql  # Intervention targeting queries
+│   └── 05_advanced_queries.sql    # CTEs, window functions, cohort analysis
 ├── notebooks/
 │   └── churn_analysis.ipynb # EDA, feature engineering, and experimentation
+├── insights.md              # Business insights & recommendations (structured)
 ├── run.py                   # Application entry point
 ├── requirements.txt         # Python dependencies
 ├── .env.example             # Environment variable template
@@ -179,16 +191,21 @@ All metrics below are on the held-out test set (1,409 customers, 80/20 stratifie
 
 **Confusion matrices (test set, n=1,409):**
 
-|                 | LR (TN/FP/FN/TP) | DT (TN/FP/FN/TP) | RF (TN/FP/FN/TP) |
+| | LR (TN/FP/FN/TP) | DT (TN/FP/FN/TP) | RF (TN/FP/FN/TP) |
 | --------------- | ---------------- | ---------------- | ---------------- |
 | Correctly retained (TN) | 741 | 741 | **935** |
-| False alarms (FP)       | 294 | 294 | **100** |
-| Missed churners (FN)    | **82** | 91 | 184 |
-| Caught churners (TP)    | **292** | 283 | 190 |
+| False alarms (FP) | 294 | 294 | **100** |
+| Missed churners (FN) | **82** | 91 | 184 |
+| Caught churners (TP) | **292** | 283 | 190 |
 
-**Why recall matters here:** Missing an actual churner (false negative) means losing that customer's lifetime value. Flagging a loyal customer as at-risk only costs a cheap retention offer. With a 26.5% churn rate, raw accuracy is deceptive — a classifier that always predicts "No Churn" scores 73.5% accuracy while catching zero churners. Logistic Regression catches the most churners (78.1% recall); Random Forest is the most precise and has the best ROC-AUC, making it the best choice when the retention budget is limited and targeting efficiency matters.
+**Why recall matters here:** Missing an actual churner (false negative) means losing that customer's lifetime value. Flagging a loyal customer as at-risk only costs a cheap retention offer. With a 26.5% churn rate, raw accuracy is deceptive — a classifier that always predicts "No Churn" scores 73.5% accuracy while catching zero churners.
+
+**Production model chosen: Random Forest** — because it achieves the highest ROC-AUC (83.78%) and precision (65.52%), minimizing wasted retention spend on customers who would not have churned anyway. When the retention budget is constrained, targeting efficiency matters more than raw recall.
+
+**Alternative: Logistic Regression** — when the goal is to maximize the number of churners caught (e.g., broad low-cost outreach campaigns), LR's 78.07% recall substantially outperforms Random Forest's 50.80% and should be preferred. The right model depends on the cost structure of the retention programme — not just the accuracy number.
 
 See the live comparison at `/models` in the running application.
+
 
 ### 6. Feature Importance (Random Forest)
 

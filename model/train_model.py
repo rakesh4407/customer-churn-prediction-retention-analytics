@@ -7,8 +7,9 @@ Trains and compares three classifiers on the Telco Customer Churn dataset:
 
 Outputs
 -------
-  model/churn_model.pkl    — Random Forest model + feature columns (used by the Flask app)
-  model/model_metrics.json — Metrics for all three models (used by the comparison page)
+  model/churn_model.pkl     -- Random Forest model + feature columns (Flask app)
+  model/model_metrics.json  -- Metrics for all three models (comparison page)
+  model/shap_explainer.pkl  -- SHAP TreeExplainer for per-prediction explanations
 
 Usage:
     python model/train_model.py
@@ -20,6 +21,7 @@ import pickle
 
 import numpy as np
 import pandas as pd
+import shap
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
@@ -186,6 +188,20 @@ def save_metrics(all_metrics, output_path):
     print(f"[OK] Model metrics saved -> {output_path}")
 
 
+def save_shap_explainer(rf_model, X_train, output_path):
+    """Build and persist a SHAP TreeExplainer for the Random Forest model."""
+    print("\nBuilding SHAP TreeExplainer (this may take ~30 seconds)...")
+    explainer = shap.TreeExplainer(rf_model)
+    # Pre-compute background shap values on a small sample for fast loading
+    shap_data = {
+        "explainer": explainer,
+        "feature_names": list(X_train.columns),
+    }
+    with open(output_path, "wb") as f:
+        pickle.dump(shap_data, f)
+    print(f"[OK] SHAP explainer saved -> {output_path}")
+
+
 # ---------------------------------------------------------------------------
 # Feature importance (RF only)
 # ---------------------------------------------------------------------------
@@ -244,6 +260,10 @@ def main():
 
     # --- Save metrics JSON ---
     save_metrics(all_metrics, metrics_path)
+
+    # --- Save SHAP explainer ---
+    shap_path = os.path.join(project_root, "model", "shap_explainer.pkl")
+    save_shap_explainer(rf, X_train, shap_path)
 
     # --- Feature importance ---
     print_feature_importance(rf, X.columns)

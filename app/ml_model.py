@@ -7,6 +7,7 @@ and multi-model comparison metrics.
 import json
 import os
 import pickle
+import shap
 import pandas as pd
 import numpy as np
 
@@ -46,11 +47,22 @@ class ChurnModel:
     }
 
     def __init__(self, model_path):
-        """Load the trained model and feature columns from disk."""
+        """Load the trained model, feature columns, and SHAP explainer from disk."""
         with open(model_path, "rb") as f:
             model_data = pickle.load(f)
         self.model = model_data["model"]
         self.feature_columns = model_data["feature_columns"]
+
+        # Load SHAP explainer if available
+        shap_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "model", "shap_explainer.pkl"
+        )
+        self._shap_explainer = None
+        if os.path.exists(shap_path):
+            with open(shap_path, "rb") as f:
+                shap_data = pickle.load(f)
+            self._shap_explainer = shap_data["explainer"]
 
     def validate_input(self, form_data):
         """Validate user input and return cleaned data dict or error messages."""
@@ -135,6 +147,7 @@ class ChurnModel:
             "retain_probability": round(retain_prob, 1),
             "confidence": round(max(churn_prob, retain_prob), 1),
             "risk_level": self._get_risk_level(churn_prob),
+            "shap_explanation": self.get_shap_explanation(df_encoded),
         }
         return result
 
@@ -188,3 +201,42 @@ class ChurnModel:
 
         return {"models": data, "best": best}
 
+    def get_shap_explanation(self, df_encoded, top_n=5):
+        """
+        Compute SHAP values for a single encoded customer row.
+        Returns a list of top_n factors with direction, label, and SHAP value.
+        Each factor: {label, raw_feature, shap_value, direction ('up'|'down')}
+        """
+        if self._shap_explainer is None:
+            return None
+
+        try:
+            shap_values = self._shap_explainer.shap_values(df_encoded)
+            # For binary classification, shap_values is a list [class0, class1]
+            # We want class 1 (churn) values
+            if isinstance(shap_values, list):
+                sv = shap_values[1][0]  # churn class, first (only) row
+            else:
+                sv = shap_values[0]
+
+            feature_names = list(df_encoded.columns)
+            shap_series = pd.Series(sv, index=feature_names)
+
+            # Get top factors by absolute SHAP value
+            top_features = shap_series.abs().nlargest(top_n).index
+
+            factors = []
+            for feat in top_features:
+                val = float(shap_series[feat])
+                # Build human-readable label from feature name
+                label = feat.replace("_", " ").title()
+                factors.append({
+                    "raw_feature": feat,
+                    "label": label,
+                    "shap_value": round(abs(val), 4),
+                    "direction": "up" if val > 0 else "down",
+                })
+
+            return factors
+        except Exception:
+            return None
